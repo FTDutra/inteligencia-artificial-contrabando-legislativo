@@ -1,0 +1,62 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Avaliação de Controle - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto bg-white rounded-md border border-slate-200 p-8 space-y-6">
+    <div class="flex justify-between items-center border-b pb-4">
+        <h1 class="text-xl font-bold text-slate-900">Análise de Emenda apresentada em Medida Provisória</h1>
+        <span class="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
+            Resta avaliar: {{ restantes }}/3
+        </span>
+    </div>
+
+    <div class="space-y-4 text-slate-700">
+        <div class="p-4 bg-slate-50 rounded-md border border-slate-200 space-y-2">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Referência Normativa</p>
+            <p class="text-base font-bold text-slate-900">MP {{ questao.mp_numero }} {% if questao.ano_mp %}/ {{ questao.ano_mp }}{% endif %}</p>
+        </div>
+
+        <div class="space-y-1">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ementa da Medida Provisória</p>
+            <p class="text-sm bg-white p-3 rounded-md border border-slate-200">{{ questao.mp_ementa }}</p>
+        </div>
+
+        {% if questao.mp_motivacao %}
+        <div class="space-y-1">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Justificativa da Emenda</p>
+            <p class="text-sm bg-white p-3 rounded-md border border-slate-200 text-justify">{{ questao.mp_motivacao }}</p>
+        </div>
+        {% endif %}
+
+        <div class="p-4 bg-amber-50 text-amber-900 text-sm font-medium text-center border-t border-amber-750 pb-2 space-y-4">
+            Esta proposição configura um <strong><i>Jabuti Legislativo</i></strong> (matéria estranha ao objeto original)?
+        </div>
+    </div>
+
+    <form method="POST" id="form-controle">
+        {% csrf_token %}
+        <input type="hidden" name="tempo_resposta" id="tempo_resposta" value="0">
+        
+        <div class="flex gap-4 justify-center">
+            <button type="submit" name="resposta_marcada" value="SIM" class="flex-1 py-3 px-4 bg-emerald-600 text-white font-medium rounded-sm hover:bg-emerald-700 transition-all shadow-sm text-center cursor-pointer">
+                Sim, é <i>jabuti legislativo</i>.
+            </button>
+            <button type="submit" name="resposta_marcada" value="NAO" class="flex-1 py-3 px-4 bg-slate-600 text-white font-medium rounded-sm hover:bg-slate-700 transition-all shadow-sm text-center cursor-pointer">
+                Não é <i>jabuti legislativo</i>.
+            </button>
+        </div>
+        <input type="hidden" name="enviar_resposta_controle" value="1">
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const inicio = Date.now();
+document.getElementById('form-controle').addEventListener('submit', function() {
+    const tempoSegundos = (Date.now() - inicio) / 1000;
+    document.getElementById('tempo_resposta').value = tempoSegundos;
+});
+</script>
+{% endblock %}

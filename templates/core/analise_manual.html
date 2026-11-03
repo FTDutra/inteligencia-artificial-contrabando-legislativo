@@ -1,0 +1,400 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Painel de Auditoria - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<!-- Alerta responsivo para telas compactas -->
+<div class="block xl:hidden mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium flex items-center gap-3 shadow-2xs">
+    <span class="text-base">⚠️</span>
+    <div>
+        <strong>Aviso de Layout:</strong> O painel de 3 colunas foi projetado para monitores expandidos. Em telas menores, utilize o zoom reduzido ou maximize a janela.
+    </div>
+</div>
+
+<!-- Grid de 3 Colunas com alinhamento superior consistente -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+    
+    <!-- ========================================== -->
+    <!-- COLUNA 1: Formulário de Entrada (Submissão) -->
+    <!-- ========================================== -->
+    <div id="card-formulario" class="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">1</span>
+                Nova Proposta
+            </h2>
+            <span class="text-[11px] text-muted-foreground font-mono">Etapa Inicial</span>
+        </div>
+
+        <form id="form-analise" class="space-y-4">
+            {% csrf_token %}
+            
+            <!-- Link Oficial com botão de busca -->
+            <div>
+                <label class="block text-xs font-medium text-foreground/80 mb-1">
+                    Link Oficial da MP <span class="text-muted-foreground font-normal">(.leg.br / .gov.br)</span> <span class="text-destructive">*</span>
+                </label>
+                <div class="flex gap-2">
+                    <input type="url" id="link_mp" required placeholder="https://www25.senado.leg.br/..." class="w-full px-3 py-2 border border-input rounded-lg text-sm bg-background text-foreground focus:ring-2 focus:ring-primary/25 focus:border-primary focus:outline-none transition-all">
+                    <button type="button" id="btn-carregar-mp" class="px-4 py-2 bg-secondary text-secondary-foreground text-xs font-medium rounded-lg hover:bg-muted transition-all whitespace-nowrap">
+                        Buscar Dados
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campo Número da MP (Preenchido Automaticamente - Somente Leitura) -->
+            <div>
+                <label class="block text-xs font-medium text-foreground/80 mb-1">Número da Medida Provisória (Extraído)</label>
+                <input type="text" id="numero_mp" required readonly placeholder="Aguardando importação do link..." class="w-full px-3 py-2 border border-border bg-muted/50 text-muted-foreground rounded-lg text-xs font-mono focus:outline-none cursor-not-allowed">
+            </div>
+            
+            <!-- Campo Ementa (Preenchido Automaticamente - Somente Leitura) -->
+            <div>
+                <label class="block text-xs font-medium text-foreground/80 mb-1">Ementa da Proposição Principal (Extraída)</label>
+                <textarea id="ementa" rows="2" required readonly placeholder="A ementa oficial aparecerá aqui automaticamente após a busca..." class="w-full px-3 py-2 border border-border bg-muted/50 text-muted-foreground rounded-lg text-xs font-mono focus:outline-none cursor-not-allowed leading-relaxed"></textarea>
+            </div>
+            
+            <!-- Upload de PDF da Emenda -->
+            <div class="p-3 bg-muted/40 rounded-xl border border-border space-y-2">
+                <label class="block text-xs font-medium text-foreground mb-1">Importar PDF da Emenda (Extração Automática)</label>
+                <input type="file" id="pdf_emenda" accept=".pdf" class="w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 cursor-pointer">
+                <button type="button" id="btn-processar-pdf" class="w-full py-1.5 bg-secondary text-secondary-foreground text-xs font-medium rounded-lg hover:bg-muted transition-all">
+                    Extrair Justificativa do PDF
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-foreground/80 mb-1">Texto da Emenda (Somente Leitura - Caixa Baixa)</label>
+                <textarea id="emenda" rows="4" required readonly placeholder="O texto extraído da justificativa aparecerá aqui automaticamente..." class="w-full px-3 py-2 border border-border bg-muted/50 text-muted-foreground rounded-lg text-xs font-mono focus:outline-none cursor-not-allowed"></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-medium text-foreground/80 mb-1">Chave Única da Sessão</label>
+                <input type="text" id="chave_unica" required readonly value="{{ chave_unica }}" class="w-full px-3 py-2 border border-border bg-muted/50 text-muted-foreground rounded-lg text-xs font-mono focus:outline-none">
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="pt-2 space-y-2">
+                <button type="submit" id="btn-enviar" class="w-full py-2.5 bg-primary text-primary-foreground font-medium text-sm rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span>Executar Análise</span>
+                    <span class="text-xs opacity-80">(BERT + Gemini)</span>
+                </button>
+                
+                <a href="?reset=1" onclick="return confirm('Deseja realmente limpar os dados atuais e reiniciar a sessão?');" class="block w-full py-2 bg-secondary text-secondary-foreground text-center font-medium text-xs rounded-xl hover:bg-muted transition-all">
+                    Resetar Sessão
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- COLUNA 2: Resultados da Auditoria (IA)     -->
+    <!-- ========================================== -->
+    <div class="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col h-full min-h-[500px]">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">2</span>
+                Resultado da Auditoria
+            </h2>
+        </div>
+        
+        <div id="loading" class="hidden my-auto text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+            <p class="text-xs text-muted-foreground mt-3 font-medium">Executando pipeline local e LLM...</p>
+        </div>
+        
+        <div id="resultado-container" class="hidden flex-grow space-y-4">
+            <div class="p-3 bg-muted/40 rounded-xl border border-border space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
+                        <p id="res-status" class="text-sm font-bold text-foreground">-</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Runtime</p>
+                        <p id="res-runtime" class="text-xs font-medium text-foreground">-</p>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-border space-y-2">
+                    <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Probabilidades (BERT)</p>
+                    
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-destructive font-medium">Norma Jabuti</span>
+                            <span id="val-jabuti" class="text-destructive font-bold">0%</span>
+                        </div>
+                        <div class="w-full bg-muted rounded-full h-2 overflow-hidden">
+                            <div id="bar-jabuti" class="bg-destructive h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-emerald-600 font-medium">Norma Saudável</span>
+                            <span id="val-saudavel" class="text-emerald-600 font-bold">0%</span>
+                        </div>
+                        <div class="w-full bg-muted rounded-full h-2 overflow-hidden">
+                            <div id="bar-saudavel" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-primary/5 rounded-xl border border-primary/10">
+                <p class="text-[10px] font-semibold text-primary uppercase tracking-wider">Resumo Analítico</p>
+                <p id="res-resumo" class="text-xs text-foreground mt-1 leading-relaxed">-</p>
+            </div>
+            
+            <div class="p-3 bg-card rounded-xl border border-border flex-grow">
+                <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Parecer Jurídico</p>
+                <div id="res-parecer" class="text-xs text-foreground/90 space-y-1 whitespace-pre-line overflow-y-auto pr-1 leading-relaxed">-</div>
+            </div>
+        </div>
+
+        <div id="placeholder-resultado" class="my-auto text-center py-24 text-muted-foreground text-xs space-y-2">
+            <svg class="w-10 h-10 mx-auto opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <p>Submeta os dados ao lado para gerar a auditoria automatizada.</p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- COLUNA 3: Questionário Final Dinâmico      -->
+    <!-- ========================================== -->
+    <div id="coluna-questionario" class="bg-card rounded-2xl border border-border p-6 shadow-sm opacity-40 pointer-events-none transition-all duration-300 flex flex-col h-full min-h-[500px]">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">3</span>
+                Avaliação Final
+            </h2>
+            <span id="badge-status-q" class="text-[10px] font-semibold px-2.5 py-1 bg-muted text-muted-foreground rounded-full">Aguardando Execução</span>
+        </div>
+
+        <form method="POST" action="" class="space-y-4 flex flex-col flex-grow">
+            {% csrf_token %}
+            <div class="overflow-y-auto pr-2 space-y-4 flex-grow">
+                {% regroup perguntas_finais by agrupamento as grupos_perguntas %}
+                {% for grupo in grupos_perguntas %}
+                    <div class="border-t border-border pt-3 first:border-t-0 space-y-3">
+                        <h3 class="text-[11px] font-bold text-primary tracking-wider uppercase">{{ grupo.grouper|default:"Geral" }}</h3>
+                        <div class="space-y-3 pl-1">
+                            {% for p in grupo.list %}
+                            <div class="space-y-1.5 bg-muted/30 p-3 rounded-xl border border-border/60">
+                                <label class="block text-xs font-medium text-foreground leading-relaxed">{{ p.enunciado }}</label>
+                                {% if p.tipo_resposta == 'SIM_NAO' %}
+                                    <select name="pergunta_{{ p.id }}" class="w-full px-2.5 py-1.5 border border-input rounded-lg text-xs bg-background text-foreground focus:ring-2 focus:ring-primary/25 focus:border-primary">
+                                        <option value="">Selecione...</option>
+                                        <option value="SIM">Sim</option>
+                                        <option value="NAO">Não</option>
+                                    </select>
+                                {% elif p.tipo_resposta == 'LIKERT_5' %}
+                                    <div class="flex justify-between items-center px-3 pt-2 pb-1 text-xs text-foreground bg-background/60 rounded-lg border border-border">
+                                        {% for i in "12345" %}
+                                        <label class="flex flex-col items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+                                            <input type="radio" name="pergunta_{{ p.id }}" value="{{ i }}" class="text-primary focus:ring-primary">
+                                            <span class="text-[11px]">{{ i }}</span>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <textarea name="pergunta_{{ p.id }}" rows="2" class="w-full px-2.5 py-1.5 border border-input rounded-lg text-xs bg-background text-foreground focus:ring-2 focus:ring-primary/25 focus:border-primary" placeholder="Sua resposta fundamentada..."></textarea>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="pt-4 border-t border-border space-y-2 mt-auto">
+                <button type="submit" name="enviar_questionario_final" value="1" class="w-full py-2.5 bg-emerald-600 text-white font-medium text-xs rounded-xl hover:bg-emerald-700 transition-all shadow-sm">
+                    Enviar Respostas Finais
+                </button>
+                <a href="?reset=1" class="block w-full py-2 bg-secondary text-secondary-foreground text-center text-xs font-medium rounded-xl hover:bg-muted transition-all">
+                    Enviar nova proposta para análise
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ação para buscar os dados da MP automaticamente pelo link
+document.getElementById('btn-carregar-mp').addEventListener('click', async function() {
+    const linkMp = document.getElementById('link_mp').value.trim();
+    if (!linkMp) {
+        alert('Insira o link oficial da MP primeiro.');
+        return;
+    }
+
+    const btn = this;
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Buscando...";
+
+    const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+    const csrftoken = csrfInput ? csrfInput.value : '';
+
+    try {
+        const response = await fetch("{% url 'core:raspar_dados_mp_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ link_mp: linkMp })
+        });
+
+        const res = await response.json();
+        
+        if (response.ok && res.sucesso) {
+            document.getElementById('numero_mp').value = res.numero_mp;
+            document.getElementById('ementa').value = res.ementa;
+        } else {
+            // Exibe a mensagem exata enviada pelo servidor Python
+            alert('Erro do Servidor: ' + (res.mensagem || 'Erro desconhecido'));
+        }
+    } catch (err) {
+        console.error('Erro detalhado:', err);
+        alert('Erro de conexão com o servidor. Verifique o console do navegador e o terminal do Django.');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+});
+
+// Rotina para processar o upload do PDF e extrair a justificativa via AJAX
+document.getElementById('btn-processar-pdf').addEventListener('click', async function() {
+    const fileInput = document.getElementById('pdf_emenda');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Por favor, selecione um arquivo PDF primeiro.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('pdf_file', fileInput.files[0]);
+    
+    const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+    const csrftoken = csrfInput ? csrfInput.value : '';
+
+    const btn = this;
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Extraindo e sanitizando...";
+
+    try {
+        const response = await fetch("{% url 'core:processar_pdf_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            body: formData
+        });
+
+        const res = await response.json();
+        if (res.sucesso) {
+            document.getElementById('emenda').value = res.texto_extraido;
+        } else {
+            alert('Erro ao processar PDF: ' + res.mensagem);
+        }
+    } catch (err) {
+        alert('Erro de comunicação com o servidor durante o upload.');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+});
+
+// Envio da Análise Principal
+document.getElementById('form-analise').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const linkMp = document.getElementById('link_mp').value.trim();
+    if (!linkMp.includes('.leg.br') && !linkMp.includes('.gov.br')) {
+        alert('A URL informada deve pertencer obrigatoriamente a um domínio oficial (.leg.br ou .gov.br).');
+        return;
+    }
+
+    const dados = {
+        numero_mp: document.getElementById('numero_mp').value,
+        link_mp: linkMp,
+        ementa: document.getElementById('ementa').value,
+        emenda: document.getElementById('emenda').value,
+        chave_unica: document.getElementById('chave_unica').value,
+    };
+
+    const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+    const csrftoken = csrfInput ? csrfInput.value : '';
+    
+    const btnEnviar = document.getElementById('btn-enviar');
+    btnEnviar.disabled = true;
+    btnEnviar.innerText = "Processando Análise...";
+    
+    document.querySelectorAll('#form-analise input:not(#emenda), #form-analise textarea:not(#emenda), #form-analise button').forEach(el => {
+        el.disabled = true;
+    });
+
+    document.getElementById('placeholder-resultado').classList.add('hidden');
+    document.getElementById('resultado-container').classList.add('hidden');
+    document.getElementById('loading').classList.remove('hidden');
+
+    try {
+        const response = await fetch("{% url 'core:disparar_analise_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(dados)
+        });
+
+        const res = await response.json();
+        document.getElementById('loading').classList.add('hidden');
+
+        if (res.sucesso) {
+            document.getElementById('resultado-container').classList.remove('hidden');
+            
+            document.getElementById('res-status').innerText = res.status_final.toUpperCase();
+            document.getElementById('res-runtime').innerText = `${res.runtime}s`;
+
+            const pJabuti = res.resultado.norma_jabuti || 0;
+            const pSaudavel = res.resultado.norma_saudavel || 0;
+            const pctJabuti = (pJabuti * 100).toFixed(2);
+            const pctSaudavel = (pSaudavel * 100).toFixed(2);
+
+            document.getElementById('val-jabuti').innerText = `${pctJabuti}%`;
+            document.getElementById('bar-jabuti').style.width = `${pctJabuti}%`;
+
+            document.getElementById('val-saudavel').innerText = `${pctSaudavel}%`;
+            document.getElementById('bar-saudavel').style.width = `${pctSaudavel}%`;
+
+            document.getElementById('res-resumo').innerText = res.resultado.resposta_resumo || 'N/A';
+            document.getElementById('res-parecer').innerText = res.resultado.resposta_parecer || 'N/A';
+
+            const colunaQ = document.getElementById('coluna-questionario');
+            colunaQ.classList.remove('opacity-40', 'pointer-events-none');
+            const badgeQ = document.getElementById('badge-status-q');
+            badgeQ.className = "text-[10px] font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full";
+            badgeQ.innerText = "Liberado para Resposta";
+
+        } else {
+            alert('Erro na execução: ' + res.mensagem);
+            document.querySelectorAll('#form-analise input:not(#emenda), #form-analise textarea:not(#emenda), #form-analise button').forEach(el => {
+                el.disabled = false;
+            });
+            btnEnviar.innerText = "Executar Análise";
+        }
+    } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        alert('Erro de comunicação com o servidor.');
+        document.querySelectorAll('#form-analise input:not(#emenda), #form-analise textarea:not(#emenda), #form-analise button').forEach(el => {
+            el.disabled = false;
+        });
+        btnEnviar.innerText = "Executar Análise";
+    }
+});
+</script>
+{% endblock %}

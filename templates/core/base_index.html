@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Projeto AderêncIA Legislativa{% endblock %}</title>
+
+    <!-- CSS Compilado Local do Tailwind -->
+    <link rel="stylesheet" href="{% static 'core/css/output.css' %}">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="{% static 'img/favicons/favicon-96x96.png' %}" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicons/favicon.svg' %}">
+    <link rel="shortcut icon" href="{% static 'img/favicons/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/favicons/apple-touch-icon.png' %}">
+    <meta name="apple-mobile-web-app-title" content="AderêncIA">
+    <link rel="manifest" href="{% static 'img/favicons/site.webmanifest' %}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full flex flex-col"> <!-- Adicionada a tag body aqui -->
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block content_global %}{% endblock %}
+
+    {% include 'core/rodape.html' %}   
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

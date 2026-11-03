@@ -1,0 +1,174 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Histórico de Auditorias - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <!-- Cabeçalho da Página -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-md border border-border">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">Repositório de análises realizadas</h1>
+            <p class="text-xs text-muted-foreground mt-1">Consulte o histórico completo de propostas auditadas pela IA com métricas de risco e conformidade.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'core:analise_manual' %}" class="px-4 py-2 bg-primary text-primary-foreground font-medium text-xs rounded-xl hover:opacity-90 transition-all">
+                + Nova Análise
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros e Pesquisa -->
+    <div class="bg-card p-4 rounded-md border border-border">
+        <form method="GET" action="{% url 'core:historico_analises' %}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            
+            <!-- Campo de Busca por Texto -->
+            <div class="md:col-span-6">
+                <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Pesquisar</label>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nº da MP, ementa ou chave única..." class="w-full px-3 py-2 border border-input rounded-xl text-xs bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all">
+            </div>
+
+            <!-- Filtro por Status -->
+            <div class="md:col-span-4">
+                <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Filtrar por Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-input rounded-xl text-xs bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition-all">
+                    <option value="">Todos os status</option>
+                    {% for code, label in status_choices %}
+                        <option value="{{ code }}" {% if status_filtro == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Botões de Ação do Filtro -->
+            <div class="md:col-span-2 flex items-end gap-2 pt-5 md:pt-0">
+                <button type="submit" class="w-full py-2 bg-secondary text-secondary-foreground font-medium text-xs rounded-xl hover:bg-muted transition-all" style="margin-top: 20px;">
+                    Filtrar
+                </button>
+                {% if query or status_filtro %}
+                    <a href="{% url 'core:historico_analises' %}" class="px-3 py-2 bg-muted text-muted-foreground font-medium text-xs rounded-xl hover:bg-muted/80 transition-all text-center" title="Limpar Filtros">
+                        ✕
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Listagem -->
+    <div class="bg-card rounded-md border border-border overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-muted/50 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        <th class="py-3 px-4">Proposta / MP</th>
+                        <th class="py-3 px-4">Data / Runtime</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Métricas (Jabuti vs Saudável)</th>
+                        <th class="py-3 px-4 text-right"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border text-xs">
+                    {% for item in page_obj %}
+                    <tr class="hover:bg-muted/20 transition-colors">
+                        <!-- MP e Ementa Resumida -->
+                        <td class="py-3.5 px-4 max-w-xs">
+                            <p class="font-bold text-foreground">{{ item.numero_mp }}</p>
+                            <p class="text-muted-foreground truncate mt-0.5">{{ item.ementa }}</p>
+                        </td>
+
+                        <!-- Data e Runtime -->
+                        <td class="py-3.5 px-4 text-muted-foreground">
+                            <p>{{ item.data_acesso|date:"d/m/Y H:i" }}</p>
+                            <p class="text-[11px] font-mono mt-0.5">{{ item.runtime|floatformat:2 }}s</p>
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td class="py-3.5 px-4">
+                            {% if item.status == 'concluido' %}
+                                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-semibold text-[10px]">Concluído</span>
+                            {% elif item.status == 'processando' %}
+                                <span class="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold text-[10px]">Processando</span>
+                            {% elif item.status == 'erro' %}
+                                <span class="px-2.5 py-1 bg-rose-100 text-rose-800 rounded-full font-semibold text-[10px]">Erro</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-semibold text-[10px]">Aguardando</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Probabilidades (Jabuti vs Saudável) -->
+                        <td class="py-3.5 px-4">
+                            {% if item.resultado_json %}
+                                <div class="space-y-2 w-full">
+                                    <!-- Norma Jabuti (Risco) -->
+                                    <div class="space-y-0.5">
+                                        <div class="flex justify-between text-[10px]">
+                                            <span class="text-destructive font-medium">Jabuti</span>
+                                            <span class="font-bold text-destructive">{% widthratio item.resultado_json.norma_jabuti 1 100 %}%</span>
+                                        </div>
+                                        <div class="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-destructive h-1.5 rounded-full" style="width: {% widthratio item.resultado_json.norma_jabuti 1 100 %}%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Norma Saudável (Normalidade) -->
+                                    <div class="space-y-0.5">
+                                        <div class="flex justify-between text-[10px]">
+                                            <span class="text-emerald-600 font-medium">Saudável</span>
+                                            <span class="font-bold text-emerald-600">
+                                                {% if item.resultado_json.norma_saudavel %}
+                                                    {% widthratio item.resultado_json.norma_saudavel 1 100 %}%
+                                                {% else %}
+                                                    {# Fallback caso o JSON possua apenas a probabilidade de jabuti #}
+                                                    {% with saude=1|add:"-1" %}{# calculo complementar se necessário #}{% endwith %}
+                                                    {% widthratio 1.0 item.resultado_json.norma_jabuti 100 %}% <!-- Exemplo ou campo direto -->
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {% if item.resultado_json.norma_saudavel %}{% widthratio item.resultado_json.norma_saudavel 1 100 %}{% else %}0{% endif %}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted-foreground italic">N/A</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Ações -->
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{% url 'core:detalhe_analise' item.id %}" class="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-muted transition-all">
+                                Detalhes
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-muted-foreground">
+                            Nenhuma análise encontrada com os filtros informados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex items-center justify-between p-4 border-t border-border bg-muted/20">
+            <p class="text-xs text-muted-foreground">
+                Exibindo página <strong class="text-foreground">{{ page_obj.number }}</strong> de <strong class="text-foreground">{{ page_obj.paginator.num_pages }}</strong>
+            </p>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filtro }}" class="px-3 py-1.5 bg-card border border-border rounded-lg text-xs font-medium hover:bg-muted transition-all">Anterior</a>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filtro }}" class="px-3 py-1.5 bg-card border border-border rounded-lg text-xs font-medium hover:bg-muted transition-all">Próxima</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

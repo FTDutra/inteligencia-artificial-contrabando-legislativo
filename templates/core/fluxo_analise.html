@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Painel de Auditoria - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Seção 1: Questões de Controle -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">1. Avaliação do Repositório de Controle</h2>
+        <!-- Iterar sobre as questões controle com suporte a cronômetro por item -->
+        <div id="questoes-controle-container" class="space-y-6">
+            {% for q in questoes_controle %}
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3" data-questao-id="{{ q.id }}">
+                <p class="text-sm font-semibold text-indigo-600">MP {{ q.mp_numero }} | Classificação: {{ q.classificacao }}</p>
+                <p class="text-sm text-slate-700"><strong>Ementa:</strong> {{ q.mp_ementa }}</p>
+                <div class="space-y-2">
+                    <label class="block text-xs font-medium text-slate-500 uppercase">Seu Parecer / Resposta:</label>
+                    <textarea rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="Digite sua análise..."></textarea>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Seção 2: Execução do Pipeline (BERT + Gemini) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">2. Execução da Análise Automatizada</h2>
+        <!-- Reaproveita os campos de submissão manual implementados anteriormente -->
+        <p class="text-sm text-slate-600 mb-4">Insira os dados da emenda para processamento síncrono pelo modelo.</p>
+        <!-- Formulário de submissão AJAX já construído -->
+    </div>
+
+    <!-- Seção 3: Questionário Dinâmico da Plataforma (Agrupado) -->
+    <div id="secao-perguntas-finais" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">3. Questionário de Avaliação Final</h2>
+        <div class="space-y-6">
+            {% regroup perguntas_finais by agrupamento as grupos_perguntas %}
+            {% for grupo in grupos_perguntas %}
+                <div class="border-t pt-4 first:border-t-0">
+                    <h3 class="text-md font-semibold text-slate-800 mb-3">{{ grupo.grouper|default:"Geral" }}</h3>
+                    <div class="space-y-4 pl-4">
+                        {% for p in grupo.list %}
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-slate-700">{{ p.enunciado }}</label>
+                            {% if p.tipo_resposta == 'SIM_NAO' %}
+                                <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <option value="">Selecione...</option>
+                                    <option value="SIM">Sim</option>
+                                    <option value="NAO">Não</option>
+                                </select>
+                            {% elif p.tipo_resposta == 'LIKERT_5' %}
+                                <div class="flex gap-4 text-sm text-slate-600">
+                                    <label><input type="radio" name="p_{{ p.id }}" value="1"> 1 - Discordo Totalmente</label>
+                                    <label><input type="radio" name="p_{{ p.id }}" value="2"> 2</label>
+                                    <label><input type="radio" name="p_{{ p.id }}" value="3"> 3 - Neutro</label>
+                                    <label><input type="radio" name="p_{{ p.id }}" value="4"> 4</label>
+                                    <label><input type="radio" name="p_{{ p.id }}" value="5"> 5 - Concordo Totalmente</label>
+                                </div>
+                            {% else %}
+                                <textarea rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Sua resposta..."></textarea>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

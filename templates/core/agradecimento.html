@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Auditoria Concluída - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<!-- Container principal com o fundo quadriculado e fade central -->
+<div class="min-h-[75vh] w-full relative flex items-center justify-center p-4">
+    
+    <!-- Camada de Fundo (Pattern Craft Grid com Fade Radial) -->
+    <div
+        class="absolute inset-0 z-0"
+        style="
+            background-image: 
+                linear-gradient(to right, #d1d5db 1px, transparent 1px),
+                linear-gradient(to bottom, #d1d5db 1px, transparent 1px);
+            background-size: 36px 36px;
+            -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%);
+            mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%);
+        "
+    ></div>
+
+    <!-- Card de Agradecimento flutuando sobre o fundo (z-index 10) -->
+    <div class="relative z-10 w-full max-w-md bg-card rounded-2xl border border-border p-8 shadow-lg text-center space-y-6 backdrop-blur-sm bg-white/90">
+        <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-2xs">
+            ✓
+        </div>
+        
+        <div class="space-y-2">
+            <h1 class="text-xl font-bold text-foreground">Avaliação Concluída com Sucesso!</h1>
+            <p class="text-sm text-muted-foreground leading-relaxed">Suas respostas e métricas analíticas foram registradas com segurança no sistema de auditoria.</p>
+        </div>
+
+        <div class="pt-4 border-t border-border space-y-3">
+            <a href="{% url 'core:analise_manual' %}" class="block w-full py-3 bg-primary text-primary-foreground font-medium text-sm rounded-xl hover:opacity-90 transition-all shadow-sm text-center">
+                Iniciar Nova Sessão de Análise
+            </a>
+            <a href="/" class="block w-full py-2.5 bg-secondary text-secondary-foreground font-medium text-xs rounded-xl hover:bg-muted transition-all text-center">
+                Retornar à Página Inicial
+            </a>        
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+<div id="content-main" style="max-width: 850px;">
+    <h2>Importação de Questões de Controle via CSV</h2>
+    <p>Siga as etapas abaixo para carregar o arquivo e associar os cabeçalhos das colunas aos campos do sistema.</p>
+
+    {% if not cabecalhos %}
+    <!-- ETAPA 1: ENVIO DO ARQUIVO -->
+    <form enctype="multipart/form-data" method="post" class="aligned">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <div class="form-row">
+                {{ form.arquivo_csv.errors }}
+                <label for="id_arquivo_csv">{{ form.arquivo_csv.label }}:</label>
+                {{ form.arquivo_csv }}
+            </div>
+            <div class="form-row">
+                {{ form.delimitador.errors }}
+                <label for="id_delimitador">{{ form.delimitador.label }}:</label>
+                {{ form.delimitador }}
+            </div>
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" name="carregar_cabecalhos" value="Avançar: Mapear Colunas" class="default" />
+        </div>
+    </form>
+
+    {% else %}
+    <!-- ETAPA 2: MAPEAMENTO DE COLUNAS -->
+    <form method="post">
+        {% csrf_token %}
+        <fieldset class="module">
+            <h2>Mapeie as Colunas do CSV para os Campos do Banco</h2>
+            <div style="padding: 15px;">
+                {% for field in form %}
+                    {% if field.name != 'arquivo_csv' and field.name != 'delimitador' %}
+                    <div class="form-row" style="margin-bottom: 10px;">
+                        <label style="font-weight: bold; width: 280px; display: inline-block;">{{ field.label }}:</label>
+                        {{ field }}
+                        {% if field.errors %}<span class="error" style="color: red;">{{ field.errors }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" name="processar_importacao" value="Confirmar e Importar Registros" class="default" />
+            <!-- Atualizado com admin:core_questaocontrole_importar_csv -->
+            <a href="{% url 'admin:core_questaocontrole_changelist' %}?reset=1" class="button cancel-link">Cancelar e Recomeçar</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

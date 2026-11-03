@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Termo de Aceite - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto bg-white rounded-xl border border-slate-200 p-8">
+    <h1 class="text-2xl font-bold text-slate-900 border-b pb-4">{{ apresentacao.titulo|default:"Termo de Consentimento e Apresentação" }}</h1>
+    
+    <div class="prose max-w-none text-slate-700 space-y-6 mt-6">
+        {{ apresentacao.conteudo|linebreaks }}
+    </div>
+
+    <form method="POST" class="pt-6 flex justify-end">
+        {% csrf_token %}
+        <button type="submit" name="aceitar_termo" value="1" class="px-2 py-2 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-all shadow-sm">
+            Li, compreendi e concordo em prosseguir
+        </button>
+    </form>
+</div>
+{% endblock %}

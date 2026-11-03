@@ -1,0 +1,140 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Detalhes da Auditoria - MP {{ analise.numero_mp }} - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Cabeçalho de Navegação e Ações -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
+        <div>
+            <h1 class="text-xl font-bold text-foreground mt-1">Proposta: {{ analise.numero_mp }}</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'core:historico_analises' %}" class="px-4 py-2 bg-secondary text-secondary-foreground font-medium text-xs rounded-xl hover:bg-muted transition-all shadow-2xs">
+                ← Voltar ao Histórico
+            </a>
+        </div>
+    </div>
+
+    <!-- Grid de 2 Colunas (Dados Originais e Resultado da IA) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        
+        <!-- ========================================== -->
+        <!-- COLUNA 1: Dados Submetidos da Proposta     -->
+        <!-- ========================================== -->
+        <div class="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+                <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">1</span>
+                    Dados da Proposta
+                </h2>
+                <span class="text-[11px] text-muted-foreground font-mono">{{ analise.data_acesso|date:"d/m/Y H:i" }}</span>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <p class="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Número da MP</p>
+                    <p class="font-medium text-foreground mt-0.5">{{ analise.numero_mp }}</p>
+                </div>
+                
+                <div>
+                    <p class="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Link Oficial</p>
+                    <a href="{{ analise.link_mp }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline truncate block mt-0.5 font-mono">
+                        {{ analise.link_mp }} ↗
+                    </a>
+                </div>
+                
+                <div>
+                    <p class="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Ementa</p>
+                    <p class="text-foreground/90 mt-0.5 leading-relaxed bg-muted/30 p-2.5 rounded-xl border border-border/60">{{ analise.ementa }}</p>
+                </div>
+                
+                <div>
+                    <p class="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Texto da Emenda</p>
+                    <div class="max-h-52 overflow-y-auto bg-muted/30 p-2.5 rounded-xl border border-border/60 font-mono text-[11px] text-foreground/90 whitespace-pre-line">
+                        {{ analise.emenda }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- COLUNA 2: Resultado da Auditoria (IA)      -->
+        <!-- ========================================== -->
+        <div class="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col h-full space-y-4">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+                <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">2</span>
+                    Resultado da Auditoria
+                </h2>
+                <span class="text-[11px] font-mono font-semibold text-foreground">Runtime: {{ analise.runtime|floatformat:2 }}s</span>
+            </div>
+            
+            {% if analise.resultado_json %}
+            <div class="space-y-4 flex-grow">
+                <!-- Status e Probabilidades -->
+                <div class="p-3 bg-muted/40 rounded-xl border border-border space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status Final</p>
+                            <p class="text-sm font-bold text-emerald-600 uppercase">{{ analise.get_status_display }}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-border space-y-2">
+                        <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Probabilidades (BERT)</p>
+                        
+                        <!-- Norma Jabuti -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-medium">
+                                <span class="text-destructive font-medium">Norma Jabuti</span>
+                                <span class="text-destructive font-bold">{% widthratio analise.resultado_json.norma_jabuti 1 100 %}%</span>
+                            </div>
+                            <div class="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                <div class="bg-destructive h-2 rounded-full" style="width: {% widthratio analise.resultado_json.norma_jabuti 1 100 %}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Norma Saudável -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-medium">
+                                <span class="text-emerald-600 font-medium">Norma Saudável</span>
+                                <span class="text-emerald-600 font-bold">
+                                    {% if analise.resultado_json.norma_saudavel %}
+                                        {% widthratio analise.resultado_json.norma_saudavel 1 100 %}%
+                                    {% else %}
+                                        100%
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: {% if analise.resultado_json.norma_saudavel %}{% widthratio analise.resultado_json.norma_saudavel 1 100 %}{% else %}0{% endif %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo Analítico -->
+                <div class="p-3 bg-primary/5 rounded-xl border border-primary/10">
+                    <p class="text-[10px] font-semibold text-primary uppercase tracking-wider">Resumo Analítico</p>
+                    <p class="text-xs text-foreground mt-1 leading-relaxed">{{ analise.resultado_json.resposta_resumo|default:"N/A" }}</p>
+                </div>
+                
+                <!-- Parecer Jurídico -->
+                <div class="p-3 bg-card rounded-xl border border-border">
+                    <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Parecer Jurídico</p>
+                    <div class="text-xs text-foreground/90 space-y-1 whitespace-pre-line max-h-56 overflow-y-auto pr-1 leading-relaxed">{{ analise.resultado_json.resposta_parecer|default:"N/A" }}</div>
+                </div>
+            </div>
+            {% else %}
+            <div class="my-auto text-center py-24 text-muted-foreground text-xs space-y-2">
+                <p>Nenhum resultado de IA registrado para esta análise.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

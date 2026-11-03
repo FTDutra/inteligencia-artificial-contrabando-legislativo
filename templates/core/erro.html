@@ -1,0 +1,49 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Aviso de Segurança - Aderência Legislativa{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] w-full relative flex items-center justify-center p-4">
+    
+    <!-- Fundo quadriculado pattern-craft com fade radial -->
+    <div
+        class="absolute inset-0 z-0"
+        style="
+            background-image: 
+                linear-gradient(to right, #d1d5db 1px, transparent 1px),
+                linear-gradient(to bottom, #d1d5db 1px, transparent 1px);
+            background-size: 32px 32px;
+            -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%);
+            mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%);
+        "
+    ></div>
+
+    <!-- Card Centralizado de Aviso -->
+    <div class="relative z-10 w-full max-w-md bg-card rounded-2xl border border-border p-8 shadow-lg text-center space-y-6 backdrop-blur-sm bg-white/95 dark:bg-card/95">
+        
+        <!-- Ícone Genérico de Alerta (Sem código técnico) -->
+        <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold border border-amber-100 shadow-2xs">
+            ⚠️
+        </div>
+        
+        <!-- Mensagem Padronizada e Segura -->
+        <div class="space-y-2">
+            <h1 class="text-xl font-bold text-foreground">Acesso Não Permitido</h1>
+            <p class="text-sm text-muted-foreground leading-relaxed">
+                A operação solicitada não pode ser concluída ou o acesso a este recurso é restrito pelo fluxo da plataforma.
+            </p>
+        </div>
+
+        <!-- Botões de Ação Segura -->
+        <div class="pt-4 border-t border-border space-y-3">
+            <a href="{% url 'core:analise_manual' %}" class="block w-full py-3 bg-primary text-primary-foreground font-medium text-sm rounded-xl hover:opacity-90 transition-all shadow-sm text-center">
+                Retornar ao Painel de Análise
+            </a>
+            <a href="{% url 'core:index' %}" class="block w-full py-2.5 bg-secondary text-secondary-foreground font-medium text-xs rounded-xl hover:bg-muted transition-all text-center">
+                Ir para a Página Inicial
+            </a>        
+        </div>
+    </div>
+
+</div>
+{% endblock %}

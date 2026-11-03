@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div id="content-main">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>Selecione um arquivo <strong>.CSV</strong> contendo os campos correspondentes ao modelo de Questão:</p>
+    <input type="file" name="csv_file" accept=".csv" required style="margin-bottom: 20px;">
+    <br><br>
+    <a href="{% url 'admin:core_questaocontrole_changelist' %}" class="button cancel-link">Cancelar</a>
+    <input type="submit" value="Fazer Upload e Importar" class="default">
+  </form>
+</div>
+{% endblock %}
